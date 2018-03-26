@@ -109,7 +109,7 @@ def run_partial_tasks(pending_tasks, done_tasks, pool_size=None, tick=1):
             results[task.task_id] = result
 
             if success:
-                logging.info("Done: %s", task)
+                logging.info("Done: %s:%s", task, task.task_id)
                 done_tasks.add(task)
                 return
 
