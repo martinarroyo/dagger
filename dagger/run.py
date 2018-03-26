@@ -11,15 +11,15 @@ def _run_in_process(task):
     """
     # Bound methods are not picklable ... so we need this wrapper as a target function in the process that runs a task
     try:
-        task.run()
+        result = task.run()
     except KeyboardInterrupt:
         # Due to http://bugs.python.org/issue8296, letting this exception "bubble" fails to terminate the process pool
-        return False
+        return False, None
     except Exception as e:
         logging.exception(str(e))
-        return False
+        return False, None
     else:
-        return True
+        return True, result
 
 
 class DaggerException(Exception):
@@ -78,7 +78,7 @@ def run_partial_tasks(pending_tasks, done_tasks, pool_size=None, tick=1):
     """
     Run a graph of tasks where some are already finished. Useful for attempting a rerun of a failed dagger execution.
     """
-
+    results = dict()
     num_tasks = len(pending_tasks) + len(done_tasks)
 
     # On failure of a task, information on the error, and the sate of the DAG is collected in this dictionary
@@ -101,9 +101,12 @@ def run_partial_tasks(pending_tasks, done_tasks, pool_size=None, tick=1):
 
         def task_done(success):
             """
-            :param success: True if the task execution was successful
+            :param success: Tuple with True if the task execution was successful and either the result of run() if successful or None
             """
+            success, result = success
             attempted_tasks.discard(task)
+
+            results[task.task_id] = result
 
             if success:
                 logging.info("Done: %s", task)
@@ -150,7 +153,7 @@ def run_partial_tasks(pending_tasks, done_tasks, pool_size=None, tick=1):
 
     if error_state["success"]:
         logging.info("All tasks are done!")
-        return True
+        return True, results
 
     logging.critical("Tasks execution failed")
     error_state["done_tasks"] |= done_tasks

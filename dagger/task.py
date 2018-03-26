@@ -22,12 +22,15 @@ class Task(object):
     # default number of retries that subclasses can set for their failure mitigation
     DEFAULT_RETRIES = 0
 
-    def __init__(self, config, dependencies=[], retries=None):
+    def __init__(self, config, task_id=None, dependencies=None, retries=None):
         """
         :param config: Picklable data that defines this task's behavior
         :param dependencies: List of tasks that this task depends on
         :param retries: The number of times the task should be retried on failure
         """
+        if dependencies is None:
+            dependencies = []
+        self.task_id = task_id
         self.config = config
         self.dependencies = dependencies
         self.retries_on_failure = self.DEFAULT_RETRIES if retries is None else retries
